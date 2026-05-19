@@ -1,9 +1,4 @@
 
-
-> ⚠️ Requiere conexión a internet (carga el SDK de Supabase desde CDN).
-
----
-
 ## 🗄️ Tablas requeridas en Supabase
 
 Crea estas tablas en tu proyecto de Supabase (Editor SQL):
