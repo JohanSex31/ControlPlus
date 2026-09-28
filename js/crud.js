@@ -112,7 +112,11 @@ document.getElementById('prod-form').addEventListener('submit', async (e) => {
   } else {
     ({ error } = await db.from('Producto').insert(payload));
   }
-  if (error) { toast('Error guardando producto', 'error'); return; }
+  if (error) {
+    if (error.code === '23505') { toast(`⚠️ El producto con el nombre "${payload.nombre}" ya existe`, 'error'); return; }
+    toast('Error guardando producto', 'error');
+    return;
+  }
   toast(editingProductoId ? 'Producto actualizado ✅' : 'Producto creado ✅', 'success');
   closeModal('modal-producto');
   fetchProductos();
@@ -195,7 +199,11 @@ document.getElementById('cat-form').addEventListener('submit', async (e) => {
   } else {
     ({ error } = await db.from('Categoria').insert(payload));
   }
-  if (error) { toast('Error guardando categoría', 'error'); return; }
+  if (error) {
+    if (error.code === '23505') { toast(`⚠️ La categoría "${payload.nombre}" ya existe`, 'error'); return; }
+    toast('Error guardando categoría', 'error');
+    return;
+  }
   toast(editingCategoriaId ? 'Categoría actualizada ✅' : 'Categoría creada ✅', 'success');
   closeModal('modal-categoria');
   fetchCategorias();
@@ -380,7 +388,11 @@ document.getElementById('prov-form').addEventListener('submit', async (e) => {
   } else {
     ({ error } = await db.from('Proveedor').insert(payload));
   }
-  if (error) { toast('Error guardando proveedor: ' + error.message, 'error'); return; }
+  if (error) {
+    if (error.code === '23505') { toast(`⚠️ El proveedor "${payload.nombre}" ya existe`, 'error'); return; }
+    toast('Error guardando proveedor: ' + error.message, 'error');
+    return;
+  }
   toast(editingProveedorId ? 'Proveedor actualizado ✅' : 'Proveedor creado ✅', 'success');
   closeModal('modal-proveedor');
   fetchProveedores();
