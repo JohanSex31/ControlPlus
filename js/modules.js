@@ -93,6 +93,9 @@ async function verFactura(id) {
 }
 
 function printFactura() {
+  // Mientras se imprime, el CSS oculta todo menos la factura
+  document.body.classList.add('imprimiendo-factura');
+  window.addEventListener('afterprint', () => document.body.classList.remove('imprimiendo-factura'), { once: true });
   window.print();
 }
 

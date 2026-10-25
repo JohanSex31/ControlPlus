@@ -1050,3 +1050,8 @@ table { min-width: 560px; }
 .fab-comentarios:hover { filter: brightness(1.1); }
 .fab-comentarios:focus-visible { outline: 2px solid #F5F5F5; outline-offset: 2px; }
 textarea.form-control { resize: vertical; min-height: 110px; }
+
+/* Imprimir factura: solo el comprobante, sin el contenido de la pantalla */
+@media print {
+  body.imprimiendo-factura > *:not(#modal-factura) { display: none !important; }
+}
