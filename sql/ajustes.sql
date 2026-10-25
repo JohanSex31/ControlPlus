@@ -1,8 +1,3 @@
--- =============================================
--- AJUSTES — ejecutar UNA VEZ en Supabase (Editor SQL)
--- Hazlo ANTES de usar la nueva versión de la app.
--- =============================================
-
 -- 1) Detalle de cada venta (productos vendidos)
 CREATE TABLE IF NOT EXISTS "Detalle_Venta" (
   id_detalle SERIAL PRIMARY KEY,
