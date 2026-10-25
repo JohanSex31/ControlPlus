@@ -258,7 +258,7 @@ function openClienteModal(editing = false) {
     editingClienteId = null;
     document.getElementById('cli-form').reset();
     document.getElementById('modal-cli-title').textContent = '➕ Nuevo Cliente';
-    document.getElementById('cli-fecha').value = new Date().toISOString().split('T')[0];
+    document.getElementById('cli-fecha').value = fechaLocal();
   }
   openModal('modal-cliente');
 }

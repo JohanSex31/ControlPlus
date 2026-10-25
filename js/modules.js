@@ -35,7 +35,7 @@ async function fetchVentas(search = '') {
     <tr>
       <td><span class="badge badge-orange">#${String(v.id_venta).padStart(4, '0')}</span></td>
       <td>${formatDate(v.fecha)}</td>
-      <td><strong>${v.Cliente?.nombre || '—'} ${v.Cliente?.apellido || ''}</strong></td>
+      <td><strong>${v.Cliente ? v.Cliente.nombre + ' ' + v.Cliente.apellido : 'Consumidor final'}</strong></td>
       <td>${v.Usuario?.nombre || '—'}</td>
       <td><strong class="text-orange">${formatCurrency(v.total)}</strong></td>
       <td>
@@ -48,11 +48,12 @@ async function fetchVentas(search = '') {
 
 async function deleteVenta(id) {
   if (!soloAdmin('eliminar ventas')) return;
-  if (!confirm('¿Eliminar esta venta?')) return;
-  const { error } = await db.from('Venta').delete().eq('id_venta', id);
+  if (!confirm('¿Eliminar esta venta? El stock de sus productos volverá al inventario.')) return;
+  const { error } = await db.rpc('eliminar_venta', { p_id_venta: id });
   if (error) { toast('Error eliminando venta', 'error'); return; }
   toast('Venta eliminada', 'success');
   fetchVentas();
+  checkAlertasBadge();
 }
 
 // ========== VER FACTURA ==========
@@ -66,16 +67,25 @@ async function verFactura(id) {
 
   document.getElementById('fact-numero').textContent = `#${String(venta.id_venta).padStart(4, '0')}`;
   document.getElementById('fact-fecha').textContent = formatDate(venta.fecha);
-  document.getElementById('fact-cliente').textContent = `${venta.Cliente?.nombre} ${venta.Cliente?.apellido}`;
+  document.getElementById('fact-cliente').textContent = (venta.Cliente ? `${venta.Cliente.nombre} ${venta.Cliente.apellido}` : 'Consumidor final');
   document.getElementById('fact-telefono').textContent = venta.Cliente?.telefono || '—';
   document.getElementById('fact-correo').textContent = venta.Cliente?.correo || '—';
   document.getElementById('fact-direccion').textContent = venta.Cliente?.direccion || '—';
   document.getElementById('fact-usuario').textContent = venta.Usuario?.nombre || '—';
   document.getElementById('fact-total').textContent = formatCurrency(venta.total);
 
-  // Limpiar productos y recibido/cambio (solo disponibles al momento de la venta)
-  document.getElementById('fact-productos-lista').innerHTML =
-    '<div class="fact-row" style="color:#888;font-size:0.82rem;justify-content:center">Detalle de productos no almacenado</div>';
+  const { data: detalle } = await db.from('Detalle_Venta')
+    .select('nombre_producto, cantidad, precio_unitario')
+    .eq('id_venta', id)
+    .order('id_detalle');
+  document.getElementById('fact-productos-lista').innerHTML = detalle?.length
+    ? detalle.map(d => `
+        <div class="fact-row">
+          <span>${d.nombre_producto} × ${d.cantidad}</span>
+          <span>${formatCurrency(d.precio_unitario * d.cantidad)}</span>
+        </div>`).join('')
+    : '<div class="fact-row" style="color:#888;font-size:0.82rem;justify-content:center">Venta anterior: sin detalle de productos</div>';
+  // Recibido/cambio solo existen al momento de la venta
   document.getElementById('fact-recibido-row').style.display = 'none';
   document.getElementById('fact-cambio-row').style.display = 'none';
 
@@ -192,15 +202,7 @@ async function loadFacturacionStats() {
 
   if (!ventas) return;
 
-  const total = ventas.reduce((s, v) => s + parseFloat(v.total), 0);
-  const hoy = new Date().toISOString().split('T')[0];
-  const ventasHoy = ventas.filter(v => v.fecha === hoy);
-  const totalHoy = ventasHoy.reduce((s, v) => s + parseFloat(v.total), 0);
-
-  document.getElementById('fact-total-ventas').textContent = formatCurrency(total);
-  document.getElementById('fact-num-ventas').textContent = ventas.length;
-  document.getElementById('fact-hoy').textContent = formatCurrency(totalHoy);
-  document.getElementById('fact-promedio').textContent = ventas.length ? formatCurrency(total / ventas.length) : '$0';
+  actualizarStatsFacturacion(ventas);
 
   renderTablaFacturacion(ventas);
 }
@@ -215,7 +217,7 @@ function renderTablaFacturacion(ventas) {
     <tr>
       <td><span class="badge badge-orange">#${String(v.id_venta).padStart(4, '0')}</span></td>
       <td>${formatDate(v.fecha)}</td>
-      <td><strong>${v.Cliente?.nombre || '—'} ${v.Cliente?.apellido || ''}</strong></td>
+      <td><strong>${v.Cliente ? v.Cliente.nombre + ' ' + v.Cliente.apellido : 'Consumidor final'}</strong></td>
       <td>${v.Usuario?.nombre || '—'}</td>
       <td><strong class="text-orange">${formatCurrency(v.total)}</strong></td>
       <td><button class="btn btn-secondary btn-sm" onclick="verFactura(${v.id_venta})">🧾 Ver</button></td>
@@ -237,9 +239,17 @@ async function filtrarFacturacion() {
   const { data: ventas } = await query;
   if (!ventas) return;
 
-  const total = ventas.reduce((s, v) => s + parseFloat(v.total), 0);
-  document.getElementById('fact-total-ventas').textContent = formatCurrency(total);
-  document.getElementById('fact-num-ventas').textContent = ventas.length;
+  actualizarStatsFacturacion(ventas);
 
   renderTablaFacturacion(ventas);
+}
+
+function actualizarStatsFacturacion(ventas) {
+  const sumar = lista => lista.reduce((s, v) => s + parseFloat(v.total), 0);
+  const total = sumar(ventas);
+  const hoy = fechaLocal();
+  document.getElementById('fact-total-ventas').textContent = formatCurrency(total);
+  document.getElementById('fact-num-ventas').textContent = ventas.length;
+  document.getElementById('fact-hoy').textContent = formatCurrency(sumar(ventas.filter(v => v.fecha === hoy)));
+  document.getElementById('fact-promedio').textContent = formatCurrency(ventas.length ? total / ventas.length : 0);
 }

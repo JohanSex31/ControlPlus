@@ -160,6 +160,24 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+// Fecha local (YYYY-MM-DD). toISOString() usa UTC y adelanta el día después de las 7 p. m. en Colombia
+function fechaLocal(d = new Date()) {
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+function debounce(fn, ms = 300) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+const debouncedFetchProductos = debounce(v => fetchProductos(v));
+const debouncedFetchCategorias = debounce(v => fetchCategorias(v));
+const debouncedFetchClientes = debounce(v => fetchClientes(v));
+const debouncedFetchProveedores = debounce(v => fetchProveedores(v));
+const debouncedFetchUsuarios = debounce(v => fetchUsuarios(v));
+const debouncedFetchVentas = debounce(v => fetchVentas(v));
+const debouncedBuscarProductoVenta = debounce(v => buscarProductoVenta(v), 250);
+
 function renderLoader(containerId) {
   const el = document.getElementById(containerId);
   if (el) el.innerHTML = `<tr><td colspan="10"><div class="loader"><div class="spinner"></div></div></td></tr>`;

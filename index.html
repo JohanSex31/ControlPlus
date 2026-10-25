@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ControlPlus — Control de Inventario</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏪</text></svg>" />
-  <link rel="stylesheet" href="css/styles.css?v=3" />
+  <link rel="stylesheet" href="css/styles.css?v=4" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -165,7 +165,7 @@
           <h2>Productos</h2>
           <div class="header-actions">
             <div class="search-wrap">
-              <input type="text" placeholder="Buscar producto..." oninput="fetchProductos(this.value)" />
+              <input type="text" placeholder="Buscar producto..." oninput="debouncedFetchProductos(this.value)" />
             </div>
             <button id="btn-nuevo-producto" class="btn btn-primary btn-sm" onclick="openProductoModal()">+ Nuevo producto</button>
           </div>
@@ -186,7 +186,7 @@
           <h2>Categorías</h2>
           <div class="header-actions">
             <div class="search-wrap">
-              <input type="text" placeholder="Buscar categoría..." oninput="fetchCategorias(this.value)" />
+              <input type="text" placeholder="Buscar categoría..." oninput="debouncedFetchCategorias(this.value)" />
             </div>
             <button id="btn-nueva-categoria" class="btn btn-primary btn-sm" onclick="openCategoriaModal()">+ Nueva categoría</button>
           </div>
@@ -207,7 +207,7 @@
           <h2>Clientes</h2>
           <div class="header-actions">
             <div class="search-wrap">
-              <input type="text" placeholder="Buscar cliente..." oninput="fetchClientes(this.value)" />
+              <input type="text" placeholder="Buscar cliente..." oninput="debouncedFetchClientes(this.value)" />
             </div>
             <button class="btn btn-primary btn-sm" onclick="openClienteModal()">+ Nuevo cliente</button>
           </div>
@@ -228,7 +228,7 @@
           <h2>Proveedores</h2>
           <div class="header-actions">
             <div class="search-wrap">
-              <input type="text" placeholder="Buscar proveedor..." oninput="fetchProveedores(this.value)" />
+              <input type="text" placeholder="Buscar proveedor..." oninput="debouncedFetchProveedores(this.value)" />
             </div>
             <button id="btn-nuevo-proveedor" class="btn btn-primary btn-sm" onclick="openProveedorModal()">+ Nuevo proveedor</button>
           </div>
@@ -253,7 +253,7 @@
               <div class="nv-buscar-row">
                 <div class="search-producto-wrap">
                   <input id="nv-buscar" type="text" placeholder="Nombre o código del producto..."
-                    oninput="buscarProductoVenta(this.value)" autocomplete="off" />
+                    oninput="debouncedBuscarProductoVenta(this.value)" autocomplete="off" />
                   <div id="nv-sugerencias"></div>
                   <div id="nv-producto-info" class="producto-info-bar" style="display:none">
                     📦 <span id="nv-prod-nombre-sel">—</span> &nbsp;|&nbsp;
@@ -346,7 +346,7 @@
           <h2>Historial de Ventas</h2>
           <div class="header-actions">
             <div class="search-wrap">
-              <input type="text" placeholder="Buscar..." oninput="fetchVentas(this.value)" />
+              <input type="text" placeholder="Buscar..." oninput="debouncedFetchVentas(this.value)" />
             </div>
           </div>
         </div>
@@ -432,7 +432,7 @@
           <h2>Usuarios del sistema</h2>
           <div class="header-actions">
             <div class="search-wrap">
-              <input type="text" placeholder="Buscar usuario..." oninput="fetchUsuarios(this.value)" />
+              <input type="text" placeholder="Buscar usuario..." oninput="debouncedFetchUsuarios(this.value)" />
             </div>
             <button id="btn-nuevo-usuario" class="btn btn-primary btn-sm" onclick="openUsuarioModal()">+ Nuevo usuario</button>
           </div>
@@ -685,6 +685,30 @@
   </div>
 </div>
 
+<!-- Comentarios -->
+<button id="btn-comentarios" class="fab-comentarios" type="button" onclick="abrirComentarios()" title="Enviar un comentario">💬 Comentarios</button>
+<div id="modal-comentarios" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>💬 Comentarios</h3>
+      <button class="modal-close" onclick="closeModal('modal-comentarios')">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="com-form">
+        <div class="form-group">
+          <label>Cuéntanos qué piensas de esta pantalla</label>
+          <textarea id="com-texto" class="form-control" rows="5" maxlength="1000" required placeholder="Escribe tu comentario..."></textarea>
+          <small id="com-contador" style="color:#888">0 / 1000</small>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-comentarios')">Cancelar</button>
+          <button id="com-guardar" type="submit" class="btn btn-primary">Guardar comentario</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- Toast container -->
 <div id="toast-container"></div>
 
@@ -694,6 +718,7 @@
 <script src="js/crud.js"></script>
 <script src="js/ventas_alertas.js"></script>
 <script src="js/modules.js"></script>
+<script src="js/comentarios.js"></script>
 
 </body>
 </html>

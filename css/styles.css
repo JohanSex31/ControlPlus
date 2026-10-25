@@ -1033,9 +1033,20 @@ table { min-width: 560px; }
 
 /* ===== PRINT ===== */
 @media print {
-  .sidebar, .topbar, .modal-header, .modal-actions, .btn { display: none !important; }
+  .sidebar, .topbar, .modal-header, .modal-actions, .btn, .fab-comentarios { display: none !important; }
   .modal-overlay { position: static; background: none; padding: 0; }
   .modal { box-shadow: none; border: none; }
   .factura-card { color: #000; background: #fff; }
   body { background: #fff; color: #000; }
 }
+
+/* ---- Botón flotante de comentarios ---- */
+.fab-comentarios {
+  position: fixed; right: 20px; bottom: 20px; z-index: 150;
+  background: #FF6B00; color: #fff; border: none; border-radius: 999px;
+  padding: 11px 18px; font-family: inherit; font-weight: 800; font-size: 0.85rem;
+  cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+}
+.fab-comentarios:hover { filter: brightness(1.1); }
+.fab-comentarios:focus-visible { outline: 2px solid #F5F5F5; outline-offset: 2px; }
+textarea.form-control { resize: vertical; min-height: 110px; }

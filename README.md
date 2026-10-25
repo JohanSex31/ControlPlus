@@ -16,14 +16,14 @@ CREATE TABLE "Usuario" (
 -- Tabla Categoria
 CREATE TABLE "Categoria" (
   id_categoria SERIAL PRIMARY KEY,
-  nombre VARCHAR(100) NOT NULL,
+  nombre VARCHAR(100) UNIQUE NOT NULL,
   descripcion TEXT
 );
 
 -- Tabla Producto
 CREATE TABLE "Producto" (
   id_producto SERIAL PRIMARY KEY,
-  nombre VARCHAR(150) NOT NULL,
+  nombre VARCHAR(150) UNIQUE NOT NULL,
   descripcion TEXT,
   costo NUMERIC(12,2) NOT NULL DEFAULT 0,
   precio_venta NUMERIC(12,2) NOT NULL DEFAULT 0,
@@ -75,3 +75,7 @@ Funcionalidades
 - 📊 Dashboard con KPIs en tiempo real
 - 🧾 Reporte de facturación con filtros por fecha
 - 📱 Responsive (funciona en celular, tablet y computador)
+
+## 🔧 Ajustes adicionales (ejecutar después de crear las tablas)
+
+Ejecuta `sql/ajustes.sql` en el Editor SQL de Supabase. Crea `Detalle_Venta` y `Comentario`, y las funciones `registrar_venta` y `eliminar_venta`.

@@ -29,14 +29,14 @@ async function loadNuevaVenta() {
 async function recargarClientesNV() {
   const { data: clientes } = await db.from('Cliente').select('id_cliente, nombre, apellido').order('nombre');
   document.getElementById('nv-cliente').innerHTML =
-    '<option value="">— Selecciona cliente —</option>' +
+    '<option value="">Consumidor final</option>' +
     (clientes || []).map(c => `<option value="${c.id_cliente}">${c.nombre} ${c.apellido}</option>`).join('');
 }
 
 function abrirNuevoClienteDesdeVenta() {
   editingClienteId = null;
   document.getElementById('cli-form').reset();
-  document.getElementById('cli-fecha').value = new Date().toISOString().split('T')[0];
+  document.getElementById('cli-fecha').value = fechaLocal();
   document.getElementById('modal-cli-title').textContent = '➕ Nuevo Cliente';
   window._clienteDesdeVenta = true;
   openModal('modal-cliente');
@@ -205,40 +205,37 @@ function calcularCambio() {
 }
 
 // ========== CONFIRMAR VENTA ==========
+let confirmandoVenta = false;
+
 async function confirmarVenta() {
+  if (confirmandoVenta) return;
   if (!carritoVenta.length) { toast('Agrega al menos un producto', 'warning'); return; }
-  const idCliente = parseInt(document.getElementById('nv-cliente').value);
+  const idCliente = parseInt(document.getElementById('nv-cliente').value) || null; // null = Consumidor final
   const idUsuario = App.currentUser?.id_usuario;
   const recibido = parseFloat(document.getElementById('nv-recibido').value) || 0;
-  const total = carritoVenta.reduce((s, i) => s + i.precio * i.cantidad, 0);
+  const totalCarrito = carritoVenta.reduce((s, i) => s + i.precio * i.cantidad, 0);
 
-  if (!idCliente) { toast('Selecciona un cliente', 'warning'); return; }
   if (!idUsuario) { toast('Error: no hay sesión activa', 'error'); return; }
-  if (recibido < total) {
-    toast(`Dinero insuficiente. Falta: ${formatCurrency(total - recibido)}`, 'error');
+  if (recibido < totalCarrito) {
+    toast(`Dinero insuficiente. Falta: ${formatCurrency(totalCarrito - recibido)}`, 'error');
     return;
   }
 
-  const fecha = new Date().toISOString().split('T')[0];
-  const cambio = recibido - total;
-
+  confirmandoVenta = true;
   try {
-    const { data: ventaData, error: ventaError } = await db
-      .from('Venta')
-      .insert({ fecha, total, id_cliente: idCliente, id_usuario: idUsuario })
-      .select().single();
+    // Una sola transacción en la BD: valida stock, descuenta stock y guarda venta + detalle
+    const items = carritoVenta.map(i => ({ id_producto: i.id_producto, cantidad: i.cantidad }));
+    const { data: venta, error } = await db.rpc('registrar_venta', {
+      p_id_cliente: idCliente,
+      p_id_usuario: idUsuario,
+      p_items: items,
+    });
+    if (error) throw error;
 
-    if (ventaError) throw ventaError;
+    const cambio = recibido - venta.total;
+    if (cambio < 0) toast(`El precio cambió. Total real: ${formatCurrency(venta.total)}`, 'warning');
 
-    for (const item of carritoVenta) {
-      const { data: prod } = await db.from('Producto').select('stock').eq('id_producto', item.id_producto).single();
-      const nuevoStock = (prod?.stock || 0) - item.cantidad;
-      await db.from('Producto').update({ stock: Math.max(nuevoStock, 0) }).eq('id_producto', item.id_producto);
-    }
-
-    // guardar copia del carrito para la factura antes de limpiar
-    const carritoParaFactura = [...carritoVenta];
-    mostrarFacturaNuevaVenta(ventaData, idCliente, idUsuario, recibido, cambio, carritoParaFactura);
+    mostrarFacturaNuevaVenta(venta, idCliente, idUsuario, recibido, Math.max(cambio, 0), [...carritoVenta]);
 
     carritoVenta = [];
     renderCarrito();
@@ -247,19 +244,21 @@ async function confirmarVenta() {
     toast('¡Venta registrada exitosamente! 🎉', 'success');
   } catch (err) {
     toast('Error al registrar la venta: ' + err.message, 'error');
+  } finally {
+    confirmandoVenta = false;
   }
 }
 
 async function mostrarFacturaNuevaVenta(venta, idCliente, idUsuario, recibido, cambio, items) {
   const [{ data: cliente }, { data: usuario }] = await Promise.all([
-    db.from('Cliente').select('*').eq('id_cliente', idCliente).single(),
+    idCliente ? db.from('Cliente').select('*').eq('id_cliente', idCliente).single() : Promise.resolve({ data: null }),
     db.from('Usuario').select('nombre').eq('id_usuario', idUsuario).single(),
   ]);
 
   document.getElementById('fact-numero').textContent = `#${String(venta.id_venta).padStart(4, '0')}`;
   document.getElementById('fact-fecha').textContent = formatDate(venta.fecha);
   document.getElementById('fact-usuario').textContent = usuario?.nombre || '—';
-  document.getElementById('fact-cliente').textContent = `${cliente?.nombre} ${cliente?.apellido}`;
+  document.getElementById('fact-cliente').textContent = (cliente ? `${cliente.nombre} ${cliente.apellido}` : 'Consumidor final');
   document.getElementById('fact-telefono').textContent = cliente?.telefono || '—';
   document.getElementById('fact-correo').textContent = cliente?.correo || '—';
   document.getElementById('fact-direccion').textContent = cliente?.direccion || '—';
